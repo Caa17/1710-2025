@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ucapan Ulang Tahun</title>
+    <style>
+      /* Reset + base */
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      }
+      body {
+        background: linear-gradient(180deg, #0f172a 0%, #0b1220 60%);
+        color: #fff;
+        overflow-x: hidden; /* biarkan scroll vertikal di HP */
+      }
+
+      canvas#confetti {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      .stage {
+        position: relative;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px 80px;
+        z-index: 2;
+      }
+
+      .card {
+        width: min(920px, 95%);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+        border-radius: 20px;
+        padding: 28px;
+        box-shadow: 0 10px 40px rgba(2, 6, 23, 0.6);
+        backdrop-filter: blur(6px);
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 20px;
+        align-items: center;
+      }
+
+      .message {
+        padding: 10px;
+      }
+      .title {
+        font-size: clamp(22px, 3.2vw, 36px);
+        margin: 0 0 6px 0;
+        letter-spacing: 0.4px;
+      }
+      .subtitle {
+        opacity: 0.85;
+        margin: 0 0 18px 0;
+      }
+      .typed {
+        font-family: "Georgia", serif;
+        font-size: 18px;
+        line-height: 1.55;
+      }
+
+      .media {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        width: 100%;
+      }
+
+      .video-thumb {
+        width: 100%;
+        aspect-ratio: 9 / 16;
+        max-height: 80vh;
+        border-radius: 20px;
+        overflow: hidden;
+        background: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .video-thumb video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 20px;
+        display: block;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .btn {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        color: #fff;
+        padding: 10px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.2s ease;
+      }
+
+      .btn:active {
+        transform: translateY(1px);
+      }
+
+      .btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .footer {
+        margin-top: 12px;
+        font-size: 13px;
+        opacity: 0.7;
+      }
+
+      /* RESPONSIVE HP */
+      @media (max-width: 880px) {
+        .card {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 16px;
+          gap: 20px;
+        }
+
+        .video-thumb {
+          aspect-ratio: 9 / 16;
+          max-height: 60vh;
+        }
+
+        .controls {
+          flex-direction: column;
+          gap: 8px;
+          width: 100%;
+        }
+
+        .btn {
+          width: 100%;
+        }
+
+        .typed {
+          font-size: 16px;
+        }
+
+        .title {
+          font-size: 24px;
+        }
+
+        .subtitle {
+          font-size: 14px;
+        }
+      }
+
+      /* --- Modal Surat Estetik --- */
+      .letter-modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 99999;
+      }
+
+      .letter-content {
+        background: linear-gradient(135deg, #fff0f6, #ffe6f0);
+        color: #5a1a41;
+        border-radius: 20px;
+        padding: 28px;
+        width: min(380px, 90%);
+        max-height: 80vh;
+        overflow-y: auto;
+        text-align: left;
+        box-shadow: 0 0 30px rgba(255, 192, 203, 0.3);
+        animation: openLetter 0.9s ease;
+        position: relative;
+        transform-origin: top center;
+        scrollbar-width: thin;
+        scrollbar-color: #ff80a1 #ffe6f0;
+      }
+
+      .letter-content::-webkit-scrollbar {
+        width: 8px;
+      }
+      .letter-content::-webkit-scrollbar-track {
+        background: #ffe6f0;
+        border-radius: 10px;
+      }
+      .letter-content::-webkit-scrollbar-thumb {
+        background: #ff80a1;
+        border-radius: 10px;
+      }
+      .letter-content::-webkit-scrollbar-thumb:hover {
+        background: #ff5b8c;
+      }
+
+      .letter-content h2 {
+        margin-top: 0;
+        font-size: 1.5rem;
+      }
+
+      .letter-content p {
+        white-space: pre-line;
+        line-height: 1.6;
+        font-size: 1rem;
+      }
+
+      #closeLetter {
+        position: absolute;
+        right: 12px;
+        top: 8px;
+        border: none;
+        background: none;
+        font-size: 1.4rem;
+        color: #ff4f81;
+        cursor: pointer;
+      }
+
+      @keyframes openLetter {
+        0% {
+          transform: rotateX(90deg) scale(0.8);
+          opacity: 0;
+        }
+        60% {
+          transform: rotateX(20deg) scale(1.02);
+          opacity: 1;
+        }
+        100% {
+          transform: rotateX(0deg) scale(1);
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <canvas id="confetti"></canvas>
+
+    <div class="stage">
+      <div class="card" role="main">
+        <div class="message">
+          <h1 class="title">Selamat Ulang Tahun!</h1>
+          <p class="subtitle">Semoga sehat, bahagia, dan tercapai semua impianmu 🎉</p>
+
+          <div class="typed" id="typed">Halo... hari ini spesial. Aku ingin mengucapkan...</div>
+
+          <div class="controls">
+            <button class="btn" id="playAudio">Putar Musik</button>
+            <button class="btn" id="showVideo">Tampilkan Video</button>
+            <button class="btn" id="toggleConfetti">Matikan Confetti</button>
+          </div>
+
+          <button class="btn" id="openLetter">💌 Buka Surat</button>
+
+          <div class="footer">Buat: <strong>DENCI LISTIA PUTRI</strong></div>
+        </div>
+
+        <div class="media">
+          <div class="video-thumb" id="videoThumb">
+            <video id="bgVideo" src="Video_baru.mp4" muted loop playsinline></video>
+          </div>
+
+          <div class="controls">
+            <button class="btn" id="pauseVideo">Jeda</button>
+            <button class="btn" id="playVideo">Mainkan</button>
+            <a class="btn" id="downloadBtn" download="ucapan-ulang-tahun.html" href="#">Unduh Halaman</a>
+          </div>
+
+          <div style="font-size: 13px; opacity: 0.85; text-align: center; margin-top: 6px">Sentuhan: balon, konfeti, dan teks ketik</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Surat -->
+    <div id="letterModal" class="letter-modal">
+      <div class="letter-content">
+        <button id="closeLetter">✕</button>
+        <div class="letter">
+          <h2>Untuk Denci 💖</h2>
+          <p>Hari ini, seperti tahun-tahun sebelumnya, aku masih mengingat tanggal ini tanpa perlu melihat kalender, tanpa perlu diingatkan oleh siapa pun. Seolah ingatan tentangmu, menempel di waktu, bukan hanya di kenangan.</p>
+
+          <p>
+            Selamat ulang tahun, Denci. Aku harap hari ini membawamu kebahagiaan yang sederhana tapi berarti. Tawa yang tulus, pelukan hangat dari orang-orang terdekat, dan harapan-harapan baru yang tidak hanya datang, tapi juga tinggal dan
+            tumbuh bersamamu.
+          </p>
+
+          <p>
+            Aku tidak tahu apakah kamu masih mengingatku, atau apakah hari ini sedikit saja terlintas akan seseorang yang dulu pernah begitu sering membuatmu tertawa dan mungkin juga menangis. Tapi aku masih ingat. Bukan karena aku belum
+            bisa sepenuhnya melepaskan, tapi karena sebagian dari hatiku tetap memilih untuk menyimpan yang baik-baik dari kita.
+          </p>
+
+          <p>
+            Dulu, kamu pernah jadi rumah. Tempat paling tenang, tempat aku merasa pulang. Meski pada akhirnya, kita harus pergi dengan jalan masing-masing. Aku tidak menyesali apa pun. Tidak pertemuan kita, tidak juga perpisahannya. Karena
+            dari semuanya, aku belajar mencintai itu bukan tentang memiliki, tapi tentang mendoakan dari jauh meski kadang masih terasa dekat.
+          </p>
+
+          <p>
+            Di hari ulang tahunmu ini, izinkan aku sekali lagi mengucapkan terima kasih, Denci. Terima kasih karena pernah menjadi bagian penting dalam hidupku. Terima kasih karena pernah membuatku merasa begitu dicintai, meski tidak
+            selamanya. Dan maaf, jika ada luka yang pernah aku tinggalkan di hatimu, entah aku sadari atau tidak.
+          </p>
+
+          <p>
+            Hidup terus berjalan, dan kita juga. Tapi aku ingin kamu tahu: doaku tidak pernah berhenti. Semoga kamu selalu dikelilingi oleh cinta yang tulus, orang-orang yang menghargaimu, dan kebahagiaan yang kamu layak dapatkan. Semoga
+            kamu selalu jadi cahaya—karena dulu pun, kamu pernah jadi cahaya untukku.
+          </p>
+
+          Selamat ulang tahun, Denci. Dari jauh, aku masih mendoakan yang terbaik untukmu.
+
+          <p class="signature">- Dari seseorang yang pernah menjadikanmu rumah</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Video -->
+    <div id="modal" style="position: fixed; inset: 0; background: rgba(2, 6, 23, 0.8); display: none; align-items: center; justify-content: center; z-index: 9999">
+      <div style="width: min(900px, 96%); background: #061428; padding: 12px; border-radius: 12px; position: relative; max-height: 90vh; display: flex; flex-direction: column">
+        <button id="closeModal" style="position: absolute; right: 10px; top: 8px; border: none; background: rgba(255, 255, 255, 0.1); color: white; font-size: 1.3rem; border-radius: 6px; cursor: pointer">✕</button>
+
+        <video id="modalVideo" controls style="width: 100%; height: auto; max-height: 85vh; border-radius: 12px; object-fit: contain" src="Video_baru.mp4"></video>
+      </div>
+    </div>
+
+    <!-- Audio -->
+    <audio id="bgMusic" src="Lagu.mp3" loop></audio>
+
+    <script>
+      /* ---------- Typed Text ---------- */
+      const lines = ["Halo... hari ini spesial.", "Semoga semua harapan dan cita-citamu terkabul.", "Jangan lupa tiup lilin, berdoa, dan tersenyumlah 😊"];
+      const typedEl = document.getElementById("typed");
+      let li = 0,
+        ci = 0,
+        forward = true;
+
+      function typeLoop() {
+        const text = lines[li];
+        typedEl.textContent = text.slice(0, ci);
+        if (forward) {
+          if (ci < text.length) ci++;
+          else {
+            forward = false;
+            setTimeout(typeLoop, 1200);
+            return;
+          }
+        } else {
+          if (ci > 0) ci--;
+          else {
+            forward = true;
+            li = (li + 1) % lines.length;
+          }
+        }
+        setTimeout(typeLoop, 60 + Math.random() * 40);
+      }
+      typeLoop();
+
+      /* ---------- Video ---------- */
+      const bgVideo = document.getElementById("bgVideo");
+      document.getElementById("pauseVideo").addEventListener("click", () => bgVideo.pause());
+      document.getElementById("playVideo").addEventListener("click", () => bgVideo.play());
+
+      const modal = document.getElementById("modal");
+      const modalVideo = document.getElementById("modalVideo");
+      const closeModal = document.getElementById("closeModal");
+
+      document.getElementById("showVideo").addEventListener("click", () => {
+        modal.style.display = "flex";
+        modalVideo.currentTime = 0;
+        modalVideo.play();
+      });
+
+      closeModal.addEventListener("click", () => {
+        modalVideo.pause();
+        modal.style.display = "none";
+      });
+
+      /* ---------- Music ---------- */
+      const music = document.getElementById("bgMusic");
+      document.getElementById("playAudio").addEventListener("click", () => {
+        if (music.paused) {
+          music.play();
+          document.getElementById("playAudio").textContent = "Jeda Musik";
+        } else {
+          music.pause();
+          document.getElementById("playAudio").textContent = "Putar Musik";
+        }
+      });
+
+      /* ---------- Modal Surat ---------- */
+      const openLetter = document.getElementById("openLetter");
+      const closeLetter = document.getElementById("closeLetter");
+      const letterModal = document.getElementById("letterModal");
+
+      openLetter.addEventListener("click", () => {
+        letterModal.style.display = "flex";
+        music.volume = 0.25;
+      });
+
+      closeLetter.addEventListener("click", () => {
+        letterModal.style.display = "none";
+        music.volume = 0.6;
+      });
+
+      /* ---------- Confetti ---------- */
+      const confettiCanvas = document.getElementById("confetti");
+      const ctx = confettiCanvas.getContext("2d");
+      let confettiPieces = [];
+      let confettiEnabled = true;
+
+      function resizeCanvas() {
+        confettiCanvas.width = window.innerWidth;
+        confettiCanvas.height = window.innerHeight;
+      }
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+
+      const pastelColors = ["rgba(255,182,193,0.8)", "rgba(255,223,186,0.8)", "rgba(186,225,255,0.8)", "rgba(221,160,221,0.8)", "rgba(240,255,240,0.8)"];
+
+      function createConfettiPiece() {
+        return {
+          x: Math.random() * confettiCanvas.width,
+          y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+          size: Math.random() * 8 + 6,
+          color: pastelColors[Math.floor(Math.random() * pastelColors.length)],
+          speedY: Math.random() * 0.8 + 0.4,
+          sway: Math.random() * 2 + 1,
+          swayDirection: Math.random() < 0.5 ? -1 : 1,
+          swayAngle: Math.random() * Math.PI * 2,
+        };
+      }
+
+      for (let i = 0; i < 100; i++) confettiPieces.push(createConfettiPiece());
+
+      function drawConfetti() {
+        ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        if (confettiEnabled) {
+          confettiPieces.forEach((p) => {
+            p.y += p.speedY;
+            p.swayAngle += 0.01;
+            p.x += Math.sin(p.swayAngle) * p.swayDirection;
+            ctx.beginPath();
+            ctx.ellipse(p.x, p.y, p.size / 2, p.size, Math.PI / 4, 0, 2 * Math.PI);
+            ctx.fillStyle = p.color;
+            ctx.fill();
+            if (p.y > confettiCanvas.height + 10) {
+              p.y = -10;
+              p.x = Math.random() * confettiCanvas.width;
+            }
+          });
+        }
+        requestAnimationFrame(drawConfetti);
+      }
+      drawConfetti();
+
+      document.getElementById("toggleConfetti").addEventListener("click", () => {
+        confettiEnabled = !confettiEnabled;
+        toggleConfetti.textContent = confettiEnabled ? "Matikan Confetti" : "Nyalakan Confetti";
+      });
+    </script>
+  </body>
+</html>
